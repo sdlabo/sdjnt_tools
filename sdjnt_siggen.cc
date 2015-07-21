@@ -91,8 +91,8 @@ int main()
         * cos(2 * M_PI * ((double) f64k * i) /  (double) POINT_1SEC);
 //      s = s01k + s02k + s04k + s08k + s16k + s32k + s64k + noise;
 
-      s = (s01k + s02k + s04k + s08k + s16k + s32k + s64k + noise) / 16 *
-        32767.0 + 32767.0;
+      s = (s01k + s02k + s04k + s08k + s16k + s32k + s64k + noise) / 8 *
+        32767.0;
 //      s = s64k * ;
 //      s = s + 71.0;
 //      printf("%f\n", s);
