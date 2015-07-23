@@ -1,6 +1,12 @@
 import struct
+import sys
 
-fp = open("./sdlab_20150718_012717_00000000_5.data", mode='rb')
+if (len(sys.argv) != 2):
+    print "usage"
+    quit()
+
+fp = open(sys.argv[1], mode='rb')
+#fp = open("./sdlab_20150718_012717_00000000_5.data", mode='rb')
 
 x_re = []
 x_im = []
@@ -23,6 +29,6 @@ for i in range(0, 2**20):
     d = struct.unpack('<d', fp.read(8)) # unsigned long, little-endian
     p_b.append(d)
 
-for i in range(0, 1000):
+for i in range(0, 10000):
     print "%s" % p_a[i]
 
