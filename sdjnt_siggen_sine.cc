@@ -24,6 +24,9 @@
  
 #include <vector>
 #include <complex>
+#include <string>
+
+#include "cmdline.h"
  
 using namespace std;
 typedef std::complex<double> sdlab_complex;
@@ -32,29 +35,39 @@ typedef std::complex<double> sdlab_complex;
 
 #define POINT_1SEC 2097152
 
-int main()
+int main(int argc, char **argv)
 {
+  cmdline::parser p;
+  p.add<int>("freq", 'f', "frequency of sine wave.",
+             false, 20);
+  p.add<string>("dst", 'd', "destination ip address.", false, "127.0.0.1");
+  p.add("help", 'h', "print help");
+
+  p.parse(argc, argv);
+  if(p.parse(argc, argv) == false || p.exist("help") == true){
+    printf("%s\n", p.error_full().c_str());
+    printf("%s", p.usage().c_str());
+    return 0;
+  }
+
+  int freq = p.get<int>("freq");
+  string str_ip = p.get<string>("dst");
+
   int i;
   double noise;
   double p_signal = 1.0;
-  int f01k = 4096;//Hz
-
   int id = 0;
   int flag = 0;
 
   int sock;
-  struct sockaddr_in addr0, addr1;
+  struct sockaddr_in addr;
 
   sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-  addr0.sin_family = AF_INET;
-  addr0.sin_port = htons(0x4000);
-  addr0.sin_addr.s_addr = inet_addr("127.0.0.1");
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(0x4000);
+  addr.sin_addr.s_addr = inet_addr(str_ip.c_str());
 
-  addr1.sin_family = AF_INET;
-  addr1.sin_port = htons(0x4001);
-  addr1.sin_addr.s_addr = inet_addr("127.0.0.1");
-  
   srand(0);
 
   while(1){
@@ -63,42 +76,29 @@ int main()
       double s;
       double s01k;
 
-      unsigned short val;
+      short val;
       unsigned char buf[2048];
 
       s = p_signal
-        * cos(2 * M_PI * ((double) f01k * i) /  (double) POINT_1SEC);
+        * cos(2 * M_PI * ((double) freq * (((double)i) / 2.0)) /
+              (double) POINT_1SEC);
       s = s * 32767.0;
 
       val = (short) (s);
-//      printf("%05d %d\n", val, 4 + (i % 512) * 2);
-      *((short *) (buf + 4 + (i % 512) * 2)) = htons(val);
 
-      if((i + 1) % 512 == 0){
+      *((short *) (buf + 4 + (i % 256) * 4)) = htons(val);
+      *((short *) (buf + 4 + (i % 256) * 4 + 2)) = htons(val / 2);
+
+      if((i + 1) % 256 == 0){
         int ret;
         *((int *) buf) = htonl(id);
         id += 512;
-//        printf("id = %d, size = %d\n", id, sizeof(buf));
-
-        if(flag == 0){
-          ret = sendto(sock, buf, 1028, 0,
-                       (struct sockaddr *)&addr0, sizeof(addr0));
-        }else{
-          ret = sendto(sock, buf, 1028, 0,
-                       (struct sockaddr *)&addr1, sizeof(addr0));
-        }
-        
-//        printf("ret = %d\n", ret);
-//        exit(0);
+        ret = sendto(sock, buf, 1028, 0,
+                     (struct sockaddr *)&addr, sizeof(addr));
       }
     }
 
-    if(flag == 0){
-      flag = 1;
-    }else{
-      flag = 0;
-      printf("sleep\n");
-      sleep(1);
-    }
+    printf("sleep\n");
+    sleep(1);
   }
 }
